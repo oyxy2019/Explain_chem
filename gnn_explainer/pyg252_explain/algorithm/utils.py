@@ -18,6 +18,7 @@ def set_masks(
     loop_mask = edge_index[0] != edge_index[1]
 
     # Loop over layers and set masks on MessagePassing layers:
+    print("### set_masks on MessagePassing module")
     for module in model.modules():
         if isinstance(module, MessagePassing):
             print(f'module:{module}')

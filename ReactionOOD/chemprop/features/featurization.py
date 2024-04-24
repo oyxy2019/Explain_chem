@@ -275,7 +275,17 @@ def map_reac_to_prod(mol_reac: Chem.Mol, mol_prod: Chem.Mol):
     """
     only_prod_ids = []
     prod_map_to_id = {}
-    mapnos_reac = set([atom.GetAtomMapNum() for atom in mol_reac.GetAtoms()]) 
+    # lyy
+    for atom in mol_reac.GetAtoms():
+        print(atom.GetIdx(), atom.GetSymbol())
+    print("mol_reac.GetAtoms(): ",  [atom for atom in mol_reac.GetAtoms()])
+    print("atom.GetAtomMapNum(): ", [atom.GetAtomMapNum() for atom in mol_reac.GetAtoms()])
+
+    mapnos_reac = set([atom.GetAtomMapNum() for atom in mol_reac.GetAtoms()])
+    # lyy
+    mapnos_reac_dic = {atom.GetAtomMapNum(): atom.GetSymbol() for atom in mol_reac.GetAtoms()}
+    print(mapnos_reac_dic)
+
     for atom in mol_prod.GetAtoms():
         mapno = atom.GetAtomMapNum()
         if mapno > 0:

@@ -91,13 +91,13 @@ class GINFeatExtractor(GNNBasic):
         else:
             x, edge_index, edge_attr, batch, batch_size = self.arguments_read(*args, **kwargs)
             kwargs.pop('batch_size', 'not found')
-            print("##### GIN encoder DEBUG")
-            print(f'x: {x}')
-            print(f'edge_index: {edge_index}')
-            print(f'batch: {batch}')
-            print(f'batch_size: {batch_size}')
-            print(f'kwargs: {kwargs}')
-            print('-------------------------------')
+            # print("##### GIN encoder DEBUG")
+            # print(f'x: {x}')
+            # print(f'edge_index: {edge_index}')
+            # print(f'batch: {batch}')
+            # print(f'batch_size: {batch_size}')
+            # print(f'kwargs: {kwargs}')
+            # print('-------------------------------')
             out_readout = self.encoder(x, edge_index, batch, batch_size, **kwargs)
         return out_readout
 
