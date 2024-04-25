@@ -2,6 +2,7 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 from rdkit.Chem import rdChemReactions
 import networkx as nx
+from chemprop.rdkit import make_mol
 
 import numpy as np
 import torch
@@ -18,7 +19,7 @@ def plot_reaction_with_smiles(reaction_smiles):
     img = Draw.ReactionToImage(rxn, subImgSize=(500, 500))
 
     # 设置图形显示
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(20, 5))
     ax.imshow(img)
     ax.axis('off')  # 关闭坐标轴
 
@@ -30,7 +31,47 @@ def plot_reaction_with_smiles(reaction_smiles):
     plt.show()
 
 
+def get_id_map_to_label(mol_graph):
+    '''
+    根据反应式SMILE字符串，得到可视化图节点中的标签
+    '''
+    mol = mol_graph.mol
+    mol_reac = make_mol(mol.split(">")[0], mol_graph.is_explicit_h, mol_graph.is_adding_hs,
+                        mol_graph.is_keeping_atom_map)
+    mol_prod = make_mol(mol.split(">")[-1], mol_graph.is_explicit_h, mol_graph.is_adding_hs,
+                        mol_graph.is_keeping_atom_map)
+    only_prod_ids = []
+    prod_map_to_id = {}
+    mapnos_reac = set([atom.GetAtomMapNum() for atom in mol_reac.GetAtoms()])
+    for atom in mol_prod.GetAtoms():
+        mapno = atom.GetAtomMapNum()
+        if mapno > 0:
+            prod_map_to_id[mapno] = atom.GetIdx()
+            if mapno not in mapnos_reac:
+                only_prod_ids.append(atom.GetIdx())
+        else:
+            only_prod_ids.append(atom.GetIdx())
+    only_reac_ids = []
+    reac_id_to_prod_id = {}
+    for atom in mol_reac.GetAtoms():
+        mapno = atom.GetAtomMapNum()
+        if mapno > 0:
+            try:
+                reac_id_to_prod_id[atom.GetIdx()] = prod_map_to_id[mapno]
+            except KeyError:
+                only_reac_ids.append(atom.GetIdx())
+        else:
+            only_reac_ids.append(atom.GetIdx())
+
+    id_map_to_symbol = {atom.GetIdx(): atom.GetSymbol() for atom in mol_prod.GetAtoms()}
+    id_map_to_label = {v: str(id_map_to_symbol[v]) + ':' + str(k) for k, v in prod_map_to_id.items()}
+    return id_map_to_label
+
+
 def visualize_chemprop_molgraph(mol_graph):
+    # 获取节点可视化标签
+    id_map_to_label = get_id_map_to_label(mol_graph)
+
     # Create an empty NetworkX graph
     G = nx.Graph()
 
@@ -45,8 +86,8 @@ def visualize_chemprop_molgraph(mol_graph):
         G.add_edge(atom1_idx, atom2_idx)
 
     # Draw the graph
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True, node_size=500, node_color='skyblue', font_size=10, font_color='black')
+    pos = nx.kamada_kawai_layout(G)
+    nx.draw(G, pos, with_labels=True, labels={idx: id_map_to_label[idx] for idx in G.nodes()}, node_size=500, node_color='skyblue', font_size=10, font_color='black')
 
     # Show the graph
     plt.title('Molecular Graph Visualization')
@@ -68,7 +109,7 @@ def visualize_a_graph(edge_index, edge_att, node_label, dataset_name, coor=None,
             node_colors[y_idx] = atom_colors[node_label[y_idx].int().tolist()]
     else:
         node_color = ['#29A329', 'lime', '#F0EA00', 'maroon', 'brown', '#E49D1C', '#4970C6', '#FF5357']
-        element_idxs = {k: Chem.PeriodicTable.GetAtomicNumber(Chem.GetPeriodicTable(), v) for k, v in mol_type.items()}
+        element_idxs = {k: Chem.PeriodicTable.GetAtomicNumber(Chem.GetPeriodicTable(), v.split(":")[0]) for k, v in mol_type.items()}
         node_colors = [node_color[(v - 1) % len(node_color)] for k, v in element_idxs.items()]
 
     data = Data(edge_index=edge_index, att=edge_att, y=node_label, num_nodes=node_label.size(0)).to('cpu')
@@ -115,8 +156,6 @@ def visualize_a_graph(edge_index, edge_att, node_label, dataset_name, coor=None,
 def get_pygdata_from_Molgraph(data):
     mol = data.mol.split(">")[0]
     edge_index = np.array(data.edge_list, dtype=np.int64).T
-    edge_index = torch.LongTensor(edge_index)
-
     pyg_data = Data(edge_index=torch.LongTensor(edge_index),
                     edge_attr=torch.tensor(data.edge_features),
                     x=torch.tensor(data.f_atoms),
