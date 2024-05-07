@@ -121,7 +121,8 @@ def is_explicit_h(is_mol: bool = True) -> bool:
     r"""Returns whether to retain explicit Hs (for reactions only)"""
     if not is_mol:
         return PARAMS.EXPLICIT_H
-    return False
+    # return False
+    return PARAMS.EXPLICIT_H     # oyxy改
 
 
 def is_adding_hs(is_mol: bool = True) -> bool:

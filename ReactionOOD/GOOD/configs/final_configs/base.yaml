@@ -2,7 +2,7 @@ task: train
 random_seed: 123
 exp_round: null
 log_file: default
-gpu_idx: 1
+gpu_idx: 0
 ckpt_root: null
 ckpt_dir: null
 save_tag: null

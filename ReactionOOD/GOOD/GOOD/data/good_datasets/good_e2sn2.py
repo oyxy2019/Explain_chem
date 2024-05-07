@@ -350,7 +350,7 @@ class GOODE2SN2(InMemoryDataset):
             domain = 'nodesize'
         domain_getter = DomainGetter()
         for data in tqdm(data_list):
-            mol = data.mol
+            mol = data.mol.split(">")[0]        # to get whole mol
             data.__setattr__(domain, getattr(domain_getter, f'get_{domain}')(mol))      # 获取每条data的domain
 
         sorted_data_list = sorted(data_list, key=lambda data: getattr(data, domain))
@@ -376,8 +376,8 @@ class GOODE2SN2(InMemoryDataset):
 
         data_list = []
         for i, data in enumerate(dataset):
-
-            mol = data.mol.split(">")[0]
+            # mol = data.mol.split(">")[0]
+            mol = data.mol      # to get whole mol
             edge_index = np.array(data.edge_list, dtype = np.int64).T
             data = Data(edge_index=torch.LongTensor(edge_index),
                                 edge_attr=torch.tensor(data.edge_features),

@@ -44,9 +44,10 @@ def initialize_model_dataset(config: Union[CommonArgs, Munch]) -> Tuple[torch.nn
     return model, dataset
 
 
-def load_good_model_dataset(config_path):
+def load_good_model_dataset(config_path, device=torch.device("cpu")):
     args = args_parser(['--config_path', config_path])
     config = config_summoner(args)
+    config.device = device
     print(config)
     logger, writer = load_logger(config)
 
@@ -58,12 +59,27 @@ def load_good_model_dataset(config_path):
     if isinstance(model, GSATGIN):
         return model.gnn, dataset
 
-    return model, dataset
+
+def load_good_dataset_dataloader(config_path, device=torch.device("cpu")):
+    args = args_parser(['--config_path', config_path])
+    config = config_summoner(args)
+    config.device = device
+    print(config)
+    logger, writer = load_logger(config)
+
+    # Load dataset
+    print(f'#IN#Load Dataset {config.dataset.dataset_name}')
+    dataset = load_dataset(config.dataset.dataset_name, config)
+    loader = create_dataloader(dataset, config)
+
+    return dataset, loader
 
 
 if __name__ == '__main__':
     model, dataset = load_good_model_dataset('final_configs/GOODE2SN2/size/covariate/GSAT.yaml')
     print(model)
-    # train_dataset = dataset['train']
-    # train_data = train_dataset.data
-    # print(train_data)
+    train_dataset = dataset['train']
+    print(dataset['train'][0].mol)
+    print(dataset['train'][1].mol)
+    print(dataset['train'][2].mol)
+

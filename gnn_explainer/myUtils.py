@@ -68,10 +68,7 @@ def get_id_map_to_label(mol_graph):
     return id_map_to_label
 
 
-def visualize_chemprop_molgraph(mol_graph):
-    # 获取节点可视化标签
-    id_map_to_label = get_id_map_to_label(mol_graph)
-
+def visualize_chemprop_molgraph(mol_graph, is_reaction=True):
     # Create an empty NetworkX graph
     G = nx.Graph()
 
@@ -87,7 +84,12 @@ def visualize_chemprop_molgraph(mol_graph):
 
     # Draw the graph
     pos = nx.kamada_kawai_layout(G)
-    nx.draw(G, pos, with_labels=True, labels={idx: id_map_to_label[idx] for idx in G.nodes()}, node_size=500, node_color='skyblue', font_size=10, font_color='black')
+    if is_reaction:
+        # 获取节点可视化标签
+        id_map_to_label = get_id_map_to_label(mol_graph)
+        nx.draw(G, pos, with_labels=True, labels={idx: id_map_to_label[idx] for idx in G.nodes()}, node_size=500, node_color='skyblue', font_size=10, font_color='black')
+    else:
+        nx.draw(G, pos, with_labels=True, node_size=500, node_color='skyblue', font_size=10, font_color='black')
 
     # Show the graph
     plt.title('Molecular Graph Visualization')
