@@ -1,5 +1,5 @@
 from GOOD.data.good_datasets.good_e2sn2 import GOODE2SN2
-dataset, meta_info = GOODE2SN2.load(dataset_root='ReactionOOD', domain='scaffold', shift='no_shift', generate=True)
+dataset, meta_info = GOODE2SN2.load(dataset_root='/home/oyxy2019/projects/Explain_ws/ReactionOOD/GOOD/storage/datasets', domain='size', shift='no_shift', generate=True)
 """
     Args:
         root (str): The dataset saving root.

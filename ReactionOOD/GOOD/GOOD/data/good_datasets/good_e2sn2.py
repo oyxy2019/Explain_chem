@@ -371,7 +371,8 @@ class GOODE2SN2(InMemoryDataset):
         return sorted_data_list, sorted_domain_split_data_list
 
     def process(self):
-        dataset = torch.load(f"/home/oyxy2019/projects/Explain_ws/ReactionOOD/data/ReactionOOD/barriers_e2.pt")[0].mol_graphs
+        print(f'Current Working Directory: {os.getcwd()}')
+        dataset = torch.load(f"../data/ReactionOOD/barriers_e2.pt")[0].mol_graphs
         print('Load data done!')
 
         data_list = []
