@@ -59,6 +59,8 @@ class Predictor(nn.Module):
         config['encoder']['node_feature_dim'] = node_feature_dim
         config['encoder']['edge_feature_dim'] = edge_feature_dim
         encoder = GraphEncoder(**config['encoder'])
+
+        from graphmatchingnetwork_4edge_update import GraphMatchingNet, GraphAggregator
         aggregator = GraphAggregator(**config['aggregator'])
         self.gmn = GraphMatchingNet(encoder, aggregator, **config['graph_matching_net'])
 
@@ -66,7 +68,8 @@ class Predictor(nn.Module):
         self.fc1 = nn.Linear(input_dim * 2, hidden_dim)  # input_dim * 2 because we concatenate x and y
         self.fc2 = nn.Linear(hidden_dim, output_dim)
 
-    def forward(self, node_features, edge_features, from_idx, to_idx, graph_idx, training_n_graphs_in_batch):
+    def forward(self, node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, training_n_graphs_in_batch):
+        self.gmn.add_edge_attributes(graph_idx_4edge)
         graph_vectors = self.gmn(node_features, edge_features, from_idx, to_idx, graph_idx, training_n_graphs_in_batch)
         x, y = reshape_and_split_tensor(graph_vectors, 2)
         combined = torch.cat((x, y), dim=1)  # Concatenate x and y
@@ -100,6 +103,7 @@ def get_new_batch(batch_mol, batch_target):
     from_idx = []
     to_idx = []
     graph_idx = []
+    graph_idx_4edge = []
     for i, molgraph in enumerate(molgraph_list):
         node_features.append(torch.tensor(molgraph.f_atoms))
         edge_features.append(torch.tensor(molgraph.f_bonds))
@@ -108,6 +112,7 @@ def get_new_batch(batch_mol, batch_target):
         from_idx.append(torch.tensor(atom1_idx))
         to_idx.append(torch.tensor(atom2_idx))
         graph_idx.append(torch.zeros(molgraph.n_atoms, dtype=torch.long) + i)
+        graph_idx_4edge.append(torch.zeros(molgraph.n_bonds, dtype=torch.long) + i)
         # Debug
         # print(f'n_atoms: {molgraph.n_atoms}')
         # print(f'n_bonds: {molgraph.n_bonds}')
@@ -122,8 +127,9 @@ def get_new_batch(batch_mol, batch_target):
     from_idx = torch.cat(from_idx, dim=0)
     to_idx = torch.cat(to_idx, dim=0)
     graph_idx = torch.cat(graph_idx, dim=0)
+    graph_idx_4edge = torch.cat(graph_idx_4edge, dim=0)
     labels = batch_target.squeeze()
-    return node_features, edge_features, from_idx, to_idx, graph_idx, labels
+    return node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, labels
 
 
 if __name__ == '__main__':
@@ -151,6 +157,7 @@ if __name__ == '__main__':
     hidden_dim = 64
     output_dim = 1
     model = Predictor(node_feature_dim, edge_feature_dim, input_dim, hidden_dim, output_dim).to(device)
+    print(model)
     optimizer = torch.optim.Adam((model.parameters()), lr=config['training']['learning_rate'], weight_decay=1e-5)
 
     # train
@@ -170,20 +177,21 @@ if __name__ == '__main__':
         for idx, data in enumerate(tqdm(train_loader, **pbar_setting)):
             training_n_graphs_in_batch = (data.batch[-1].item() + 1) * 2
 
-            node_features, edge_features, from_idx, to_idx, graph_idx, labels = get_new_batch(data.mol, data.y)
+            node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, labels = get_new_batch(data.mol, data.y)
 
             pred = model(node_features.to(device),
                          edge_features.to(device),
                          from_idx.to(device),
                          to_idx.to(device),
                          graph_idx.to(device),
+                         graph_idx_4edge.to(device),
                          training_n_graphs_in_batch)
 
             loss = nn.functional.l1_loss(pred, labels.to(device))
 
             optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_value_(model.parameters(), config['training']['clip_value'])
+            # nn.utils.clip_grad_value_(model.parameters(), config['training']['clip_value'])
             optimizer.step()
 
             # Compute the RMSE for current batch
@@ -207,7 +215,7 @@ if __name__ == '__main__':
         for idx, data in enumerate(valid_loader):
             training_n_graphs_in_batch = (data.batch[-1].item() + 1) * 2
 
-            node_features, edge_features, from_idx, to_idx, graph_idx, labels = get_new_batch(data.mol, data.y)
+            node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, labels = get_new_batch(data.mol, data.y)
 
             with torch.no_grad():
                 pred = model(node_features.to(device),
@@ -215,6 +223,7 @@ if __name__ == '__main__':
                              from_idx.to(device),
                              to_idx.to(device),
                              graph_idx.to(device),
+                             graph_idx_4edge.to(device),
                              training_n_graphs_in_batch)
 
             loss = nn.functional.l1_loss(pred, labels.to(device))

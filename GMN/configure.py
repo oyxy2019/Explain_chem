@@ -8,7 +8,7 @@ def get_default_config():
     graph_embedding_net_config = dict(
         node_state_dim=node_state_dim,
         edge_state_dim=edge_state_dim,
-        edge_hidden_sizes=[node_state_dim * 2, node_state_dim * 2],
+        edge_hidden_sizes=[edge_state_dim * 2, edge_state_dim * 2],
         node_hidden_sizes=[node_state_dim * 2],
         n_prop_layers=5,
         # set to False to not share parameters across message passing layers
@@ -35,29 +35,16 @@ def get_default_config():
             node_feature_dim=1,
             edge_hidden_sizes=[edge_state_dim]),
         aggregator=dict(
-            node_hidden_sizes=[graph_rep_dim],
+            edge_hidden_sizes=[graph_rep_dim],
             graph_transform_sizes=[graph_rep_dim],
-            input_size=[node_state_dim],
+            input_size=[edge_state_dim],
             gated=True,
             aggregation_type='sum'),
         graph_embedding_net=graph_embedding_net_config,
         graph_matching_net=graph_matching_net_config,
         model_type=model_type,
-        data=dict(
-            problem='graph_edit_distance',
-            dataset_params=dict(
-                # always generate graphs with 20 nodes and p_edge=0.2.
-                n_nodes_range=[20, 20],
-                p_edge_range=[0.2, 0.2],
-                n_changes_positive=1,
-                n_changes_negative=2,
-                validation_dataset_size=1000)),
         training=dict(
-            batch_size=20,
-            learning_rate=1e-4,
-            mode='pair',
-            loss='hamming',  # other: margin, hamming
-            margin=1.0,
+            learning_rate=1e-3,
             # A small regularizer on the graph vector scales to avoid the graph
             # vectors blowing up.  If numerical issues is particularly bad in the
             # model we can add `snt.LayerNorm` to the outputs of each layer, the
@@ -65,14 +52,6 @@ def get_default_config():
             # keep the network activation scale in a reasonable range.
             graph_vec_regularizer_weight=1e-6,
             # Add gradient clipping to avoid large gradients.
-            clip_value=10.0,
-            # Increase this to train longer.
-            n_training_steps=500,
-            # Print training information every this many training steps.
-            print_after=100,
-            # Evaluate on validation set every `eval_after * print_after` steps.
-            eval_after=10),
-        evaluation=dict(
-            batch_size=20),
+            clip_value=1.0,),
         seed=8,
     )
