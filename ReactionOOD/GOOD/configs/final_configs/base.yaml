@@ -9,7 +9,7 @@ save_tag: null
 pytest: False
 pipeline: Pipeline
 clean_save: False
-num_workers: 1
+num_workers: 0
 train:
   weight_decay: 0.
   save_gap: 10

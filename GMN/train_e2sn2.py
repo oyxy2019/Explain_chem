@@ -37,12 +37,18 @@ for (k, v) in config.items():
     print("%s= %s" % (k, v))
 
 # Set random seeds
-seed = config['seed']
-random.seed(seed)
-np.random.seed(seed + 1)
-torch.manual_seed(seed + 2)
-torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.benchmark = True
+def same_seeds(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.enabled = False
+
+same_seeds(config['seed'])
 
 # setting
 set_explicit_h(True)
@@ -158,6 +164,7 @@ if __name__ == '__main__':
     output_dim = 1
     model = Predictor(node_feature_dim, edge_feature_dim, input_dim, hidden_dim, output_dim).to(device)
     print(model)
+    print("Total parameters:", sum(p.numel() for p in model.parameters()))
     optimizer = torch.optim.Adam((model.parameters()), lr=config['training']['learning_rate'], weight_decay=1e-5)
 
     # train

@@ -56,6 +56,9 @@ def load_good_model_dataset(config_path, device=torch.device("cpu")):
     ckpt = torch.load(config.test_ckpt, map_location=config.device)
     model.load_state_dict(ckpt['state_dict'])
 
+    print(model)
+    print("Total parameters:", sum(p.numel() for p in model.parameters()))
+
     if isinstance(model, GSATGIN):
         return model.gnn, dataset
 
