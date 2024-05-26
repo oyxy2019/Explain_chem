@@ -372,7 +372,9 @@ class GOODE2SN2(InMemoryDataset):
 
     def process(self):
         print(f'Current Working Directory: {os.getcwd()}')
-        dataset = torch.load(f"../data/ReactionOOD/barriers_e2.pt")[0].mol_graphs
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 '../../../../data/ReactionOOD/barriers_e2.pt')
+        dataset = torch.load(file_path)[0].mol_graphs
         print('Load data done!')
 
         data_list = []
