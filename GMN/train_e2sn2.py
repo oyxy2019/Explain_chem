@@ -57,7 +57,7 @@ pbar_setting = {'colour': '#a48fff', 'bar_format': '{l_bar}{bar:20}{r_bar}',
 
 
 class Predictor(nn.Module):
-    def __init__(self, node_feature_dim, edge_feature_dim, input_dim, hidden_dim, output_dim):
+    def __init__(self, node_feature_dim, edge_feature_dim, head_hidden_dim):
         super(Predictor, self).__init__()
 
         # gmn model
@@ -70,8 +70,8 @@ class Predictor(nn.Module):
         self.gmn = GraphMatchingNet(encoder, aggregator, **config['graph_matching_net'])
 
         # predictor
-        self.fc1 = nn.Linear(input_dim * 2, hidden_dim)  # input_dim * 2 because we concatenate x and y
-        self.fc2 = nn.Linear(hidden_dim, output_dim)
+        self.fc1 = nn.Linear(config['graph_rep_dim'] * 2, head_hidden_dim)  # we concatenate x and y
+        self.fc2 = nn.Linear(head_hidden_dim, 1)
 
     def forward(self, node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, training_n_graphs_in_batch):
         self.gmn.add_edge_attributes(graph_idx_4edge)
@@ -159,10 +159,8 @@ if __name__ == '__main__':
     # model and optimizer
     node_feature_dim = 133
     edge_feature_dim = 147
-    input_dim = 128
-    hidden_dim = 64
-    output_dim = 1
-    model = Predictor(node_feature_dim, edge_feature_dim, input_dim, hidden_dim, output_dim).to(device)
+    head_hidden_dim = 64
+    model = Predictor(node_feature_dim, edge_feature_dim, head_hidden_dim).to(device)
     print(model)
     print("Total parameters:", sum(p.numel() for p in model.parameters()))
     optimizer = torch.optim.Adam((model.parameters()), lr=config['training']['learning_rate'], weight_decay=1e-5)
