@@ -170,7 +170,7 @@ if __name__ == '__main__':
     num_epoch = 200
     stale = 0
     best_epoch = 0
-    patience = 20
+    patience = 200
     best_score = float('inf')
     best_model = model
     for epoch in range(num_epoch):
@@ -259,7 +259,7 @@ if __name__ == '__main__':
                 print(f"No improvment {patience} consecutive epochs, early stopping")
                 break
 
-    torch.save(best_model, f"model_save/best_model_{current_time}_val_RMSE_{valid_metric:.5f}.pt")
+    torch.save(best_model, f"model_save/best_model_{current_time}_val_RMSE_{best_score:.5f}.pt")
     print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.5f}')
 
     from testdata_e2sn2 import dataset_test_performance

@@ -2,9 +2,9 @@ def get_default_config():
     """The default configs."""
     model_type = 'matching'
     # Set to `embedding` to use the graph embedding net.
-    node_state_dim = 128
-    edge_state_dim = 128
-    graph_rep_dim = 512
+    node_state_dim = 64
+    edge_state_dim = 64
+    graph_rep_dim = 256
     graph_embedding_net_config = dict(
         node_state_dim=node_state_dim,
         edge_state_dim=edge_state_dim,
@@ -30,6 +30,8 @@ def get_default_config():
     graph_matching_net_config = graph_embedding_net_config.copy()
     graph_matching_net_config['similarity'] = 'dotproduct'  # other: euclidean, cosine
     return dict(
+        node_state_dim=node_state_dim,
+        edge_state_dim=edge_state_dim,
         graph_rep_dim=graph_rep_dim,
         encoder=dict(
             node_hidden_sizes=[node_state_dim, node_state_dim],
