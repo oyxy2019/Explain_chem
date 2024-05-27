@@ -139,10 +139,10 @@ def get_new_batch(batch_mol, batch_target):
 
 if __name__ == '__main__':
     # config
-    config_path = 'final_configs/GOODE2SN2/size/no_shift/GSAT.yaml'
+    config_path = 'final_configs/GOODE2SN2/size/no_shift/base_data.yaml'
 
     # save dir
-    current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     os.makedirs('model_save', exist_ok=True)
 
     # load dataset
@@ -154,6 +154,7 @@ if __name__ == '__main__':
     # dataloader
     train_loader = dataloader['train']
     valid_loader = dataloader['val']
+    test_loader = dataloader['test']
 
     # model and optimizer
     node_feature_dim = 133
@@ -168,7 +169,7 @@ if __name__ == '__main__':
 
     # train
     print(f'#IN#Training started')
-    num_epoch = 200
+    num_epoch = 1
     stale = 0
     best_epoch = 0
     patience = 20
@@ -249,7 +250,7 @@ if __name__ == '__main__':
         # save model
         if valid_metric < best_score:
             print(f"Best model found at epoch {epoch}, saving model")
-            torch.save(model.state_dict(), f"model_save/best_epoch_{current_time}.ckpt")
+            torch.save(model, f"model_save/best_model_{current_time}_val_RMSE_{valid_metric:.5f}.pt")
             best_score = valid_metric
             best_epoch = epoch
             stale = 0
@@ -258,4 +259,7 @@ if __name__ == '__main__':
             if stale > patience:
                 print(f"No improvment {patience} consecutive epochs, early stopping")
                 break
-    print(f'\nTraining end, Best model found at epoch {best_epoch}, best_score={best_score:.5f}')
+    print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.5f}')
+
+    from testdata_e2sn2 import dataset_test_performance
+    dataset_test_performance(test_loader, model, device)

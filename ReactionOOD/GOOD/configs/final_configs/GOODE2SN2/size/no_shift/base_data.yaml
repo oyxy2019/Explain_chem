@@ -1,0 +1,10 @@
+includes:
+  - base.yaml
+model:
+  model_name: None
+ood:
+  ood_alg: None
+  ood_param: 0
+train:
+  max_epoch: 0
+  lr: 0
