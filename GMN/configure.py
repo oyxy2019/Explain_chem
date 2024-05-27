@@ -2,17 +2,17 @@ def get_default_config():
     """The default configs."""
     model_type = 'matching'
     # Set to `embedding` to use the graph embedding net.
-    node_state_dim = 32
-    edge_state_dim = 16
-    graph_rep_dim = 128
+    node_state_dim = 128
+    edge_state_dim = 128
+    graph_rep_dim = 512
     graph_embedding_net_config = dict(
         node_state_dim=node_state_dim,
         edge_state_dim=edge_state_dim,
         edge_hidden_sizes=[edge_state_dim * 2, edge_state_dim * 2],
-        node_hidden_sizes=[node_state_dim * 2],
+        node_hidden_sizes=[node_state_dim * 2, node_state_dim * 2],
         n_prop_layers=5,
         # set to False to not share parameters across message passing layers
-        share_prop_params=True,
+        share_prop_params=False,
         # initialize message MLP with small parameter weights to prevent
         # aggregated message vectors blowing up, alternatively we could also use
         # e.g. layer normalization to keep the scale of these under control.
@@ -30,13 +30,13 @@ def get_default_config():
     graph_matching_net_config = graph_embedding_net_config.copy()
     graph_matching_net_config['similarity'] = 'dotproduct'  # other: euclidean, cosine
     return dict(
+        graph_rep_dim=graph_rep_dim,
         encoder=dict(
-            node_hidden_sizes=[node_state_dim],
-            node_feature_dim=1,
-            edge_hidden_sizes=[edge_state_dim]),
+            node_hidden_sizes=[node_state_dim, node_state_dim],
+            edge_hidden_sizes=[edge_state_dim, edge_state_dim]),
         aggregator=dict(
-            edge_hidden_sizes=[graph_rep_dim],
-            graph_transform_sizes=[graph_rep_dim],
+            edge_hidden_sizes=[graph_rep_dim, graph_rep_dim],
+            graph_transform_sizes=[graph_rep_dim, graph_rep_dim],
             input_size=[edge_state_dim],
             gated=True,
             aggregation_type='sum'),
