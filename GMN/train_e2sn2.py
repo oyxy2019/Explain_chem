@@ -21,8 +21,13 @@ import collections
 import time
 import os
 
-# 当loss='margin'时，会报错梯度计算
-torch.autograd.set_detect_anomaly(True)
+# dataset config
+config_path = 'final_configs/GOODE2SN2/size/no_shift/base_data.yaml'
+
+dataset, dataloader = load_good_dataset_dataloader(config_path)
+print(f"#D#Dataset: {dataset}")
+print(f"#D#Dataloader: {dataloader}")
+print('#D#', dataset['train'][0] if type(dataset) is dict else dataset[0])
 
 # Set GPU
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -46,8 +51,6 @@ def same_seeds(seed):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.enabled = False
-
-same_seeds(config['seed'])
 
 # setting
 set_explicit_h(True)
@@ -137,19 +140,13 @@ def get_new_batch(batch_mol, batch_target):
     return node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, labels
 
 
-if __name__ == '__main__':
-    # config
-    config_path = 'final_configs/GOODE2SN2/size/no_shift/base_data.yaml'
+def main():
+    same_seeds(config['seed'])
 
     # save dir
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    os.makedirs('model_save', exist_ok=True)
-
-    # load dataset
-    dataset, dataloader = load_good_dataset_dataloader(config_path)
-    print(f"#D#Dataset: {dataset}")
-    print(f"#D#Dataloader: {dataloader}")
-    print('#D#', dataset['train'][0] if type(dataset) is dict else dataset[0])
+    model_save_path = 'model_save/grid_search'
+    os.makedirs(model_save_path, exist_ok=True)
 
     # dataloader
     train_loader = dataloader['train']
@@ -167,10 +164,10 @@ if __name__ == '__main__':
 
     # train
     print(f'#IN#Training started')
-    num_epoch = 200
+    num_epoch = config['training']['num_epoch']
+    patience = config['training']['patience']
     stale = 0
     best_epoch = 0
-    patience = 200
     best_score = float('inf')
     best_model = model
     for epoch in range(num_epoch):
@@ -259,8 +256,14 @@ if __name__ == '__main__':
                 print(f"No improvment {patience} consecutive epochs, early stopping")
                 break
 
-    torch.save(best_model, f"model_save/best_model_{current_time}_val_RMSE_{best_score:.5f}.pt")
+    torch.save(best_model, f"{model_save_path}/best_model_{current_time}_val_RMSE_{best_score:.5f}.pt")
     print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.5f}')
 
     from testdata_e2sn2 import dataset_test_performance
-    dataset_test_performance(test_loader, model, device)
+    test_loss, test_metric = dataset_test_performance(test_loader, model, device)
+
+    return best_score, test_metric
+
+
+if __name__ == '__main__':
+    main()

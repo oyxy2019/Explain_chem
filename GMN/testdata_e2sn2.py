@@ -42,6 +42,8 @@ def dataset_test_performance(test_loader, model, device):
 
     print(f"\n[ Test | test_loss = {test_loss:.5f}, test_RMSE = {test_metric:.5f}")
 
+    return test_loss, test_metric
+
 
 if __name__ == '__main__':
     model_checkpoint = 'best_model_2024-05-27_19-09-49_val_RMSE_12.24159.pt'
