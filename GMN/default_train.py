@@ -7,6 +7,8 @@ import torch.nn as nn
 import collections
 import time
 import os
+
+# 当loss='margin'时，会报错梯度计算
 torch.autograd.set_detect_anomaly(True)
 
 # Set GPU

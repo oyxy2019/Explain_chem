@@ -207,7 +207,7 @@ class GraphPropMatchingLayer(GraphPropLayer):
                  edge_hidden_sizes,
                  node_hidden_sizes,
                  edge_net_init_scale=0.1,
-                 node_update_type='residual',
+                 edge_update_type='residual',
                  use_reverse_direction=True,
                  reverse_dir_param_different=True,
                  layer_norm=False,
@@ -215,7 +215,7 @@ class GraphPropMatchingLayer(GraphPropLayer):
                  name='graph-net'):
 
         print("init graph_matching_network_4edge_update")
-        self._edge_update_type = 'gru'
+        self._edge_update_type = edge_update_type
 
         super(GraphPropMatchingLayer, self).__init__(
             node_state_dim,
@@ -223,7 +223,6 @@ class GraphPropMatchingLayer(GraphPropLayer):
             edge_hidden_sizes,
             node_hidden_sizes,
             edge_net_init_scale=edge_net_init_scale,
-            node_update_type=node_update_type,
             use_reverse_direction=use_reverse_direction,
             reverse_dir_param_different=reverse_dir_param_different,
             layer_norm=layer_norm,
@@ -496,13 +495,14 @@ class GraphMatchingNet(GraphEmbeddingNet):
                  n_prop_layers,
                  share_prop_params=False,
                  edge_net_init_scale=0.1,
-                 node_update_type='residual',
+                 edge_update_type='residual',
                  use_reverse_direction=True,
                  reverse_dir_param_different=True,
                  layer_norm=False,
                  layer_class=GraphPropLayer,
                  similarity='dotproduct',
                  prop_type='embedding'):
+        self._edge_update_type = edge_update_type
         super(GraphMatchingNet, self).__init__(
             encoder,
             aggregator,
@@ -513,7 +513,6 @@ class GraphMatchingNet(GraphEmbeddingNet):
             n_prop_layers,
             share_prop_params=share_prop_params,
             edge_net_init_scale=edge_net_init_scale,
-            node_update_type=node_update_type,
             use_reverse_direction=use_reverse_direction,
             reverse_dir_param_different=reverse_dir_param_different,
             layer_norm=layer_norm,
@@ -521,6 +520,20 @@ class GraphMatchingNet(GraphEmbeddingNet):
             prop_type=prop_type,
         )
         self._similarity = similarity
+
+    def _build_layer(self, layer_id):
+        """Build one layer in the network."""
+        return self._layer_class(
+            self._node_state_dim,
+            self._edge_state_dim,
+            self._edge_hidden_sizes,
+            self._node_hidden_sizes,
+            edge_net_init_scale=self._edge_net_init_scale,
+            edge_update_type=self._edge_update_type,
+            use_reverse_direction=self._use_reverse_direction,
+            reverse_dir_param_different=self._reverse_dir_param_different,
+            layer_norm=self._layer_norm,
+            prop_type=self._prop_type)
 
     def _apply_layer(self,
                      layer,
