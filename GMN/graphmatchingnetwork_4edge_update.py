@@ -200,7 +200,7 @@ class GraphPropMatchingLayer(GraphPropLayer):
     forms the first pair and graph 2 and 3 are the second pair etc., and computes
     cross-graph attention-based matching for each pair.
     """
-    # oyxy加
+
     def __init__(self,
                  node_state_dim,
                  edge_state_dim,
@@ -213,10 +213,7 @@ class GraphPropMatchingLayer(GraphPropLayer):
                  layer_norm=False,
                  prop_type='embedding',
                  name='graph-net'):
-
-        print("init graph_matching_network_4edge_update")
         self._edge_update_type = edge_update_type
-
         super(GraphPropMatchingLayer, self).__init__(
             node_state_dim,
             edge_state_dim,
@@ -502,6 +499,7 @@ class GraphMatchingNet(GraphEmbeddingNet):
                  layer_class=GraphPropLayer,
                  similarity='dotproduct',
                  prop_type='embedding'):
+        print("init graph_matching_network_4edge_update")
         self._edge_update_type = edge_update_type
         super(GraphMatchingNet, self).__init__(
             encoder,
@@ -547,7 +545,6 @@ class GraphMatchingNet(GraphEmbeddingNet):
         return layer(edge_states, from_idx, to_idx, graph_idx, n_graphs,
                      similarity=self._similarity, node_features=node_features)
 
-    # oyxy加
     def forward(self,
                 node_features,
                 edge_features,

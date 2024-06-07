@@ -140,12 +140,49 @@ def get_new_batch(batch_mol, batch_target):
     return node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, labels
 
 
+def dataset_test_performance(test_loader, model, device):
+    model.eval()
+
+    test_loss = []
+    test_metric = []
+
+    for idx, data in enumerate(test_loader):
+        training_n_graphs_in_batch = (data.batch[-1].item() + 1) * 2
+
+        node_features, edge_features, from_idx, to_idx, graph_idx, graph_idx_4edge, labels = get_new_batch(data.mol, data.y)
+
+        with torch.no_grad():
+            pred = model(node_features.to(device),
+                         edge_features.to(device),
+                         from_idx.to(device),
+                         to_idx.to(device),
+                         graph_idx.to(device),
+                         graph_idx_4edge.to(device),
+                         training_n_graphs_in_batch)
+
+        loss = nn.functional.l1_loss(pred, labels.to(device))
+
+        # Compute the RMSE for current batch
+        metric_rmse = sqrt(mean_squared_error(pred.detach().cpu(), labels.cpu()))
+
+        # Record loss
+        test_loss.append(loss.item())
+        test_metric.append(metric_rmse)
+
+    test_loss = sum(test_loss) / len(test_loss)
+    test_metric = sum(test_metric) / len(test_metric)
+
+    print(f"\n[ Test | test_loss = {test_loss:.5f}, test_RMSE = {test_metric:.5f}")
+
+    return test_loss, test_metric
+
+
 def main():
     same_seeds(config['seed'])
 
     # save dir
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    model_save_path = 'model_save/grid_search'
+    model_save_path = 'model_save'
     os.makedirs(model_save_path, exist_ok=True)
 
     # dataloader
@@ -259,7 +296,7 @@ def main():
     torch.save(best_model, f"{model_save_path}/best_model_{current_time}_val_RMSE_{best_score:.5f}.pt")
     print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.5f}')
 
-    from testdata_e2sn2 import dataset_test_performance
+    # ---------- Test ----------
     test_loss, test_metric = dataset_test_performance(test_loader, model, device)
 
     return best_score, test_metric

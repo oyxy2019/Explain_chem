@@ -17,6 +17,9 @@ from GOOD.utils.initial import reset_random_seed
 from GOOD.utils.logger import load_logger
 
 
+executed = False
+
+
 def initialize_model_dataset(config: Union[CommonArgs, Munch]) -> Tuple[torch.nn.Module, Union[dict, DataLoader]]:
     r"""
     Fix random seeds and initialize a GNN and a dataset. (For project use only)
@@ -49,7 +52,11 @@ def load_good_model_dataset(config_path, device=torch.device("cpu")):
     config = config_summoner(args)
     config.device = device
     print(config)
-    logger, writer = load_logger(config)
+
+    global executed
+    if not executed:
+        logger, writer = load_logger(config)    # 重复创建logger会导致递归错误，所以执行过一次后直接跳过
+        executed = True
 
     model, dataset = initialize_model_dataset(config)
 
@@ -68,7 +75,11 @@ def load_good_dataset_dataloader(config_path, device=torch.device("cpu")):
     config = config_summoner(args)
     config.device = device
     print(config)
-    logger, writer = load_logger(config)
+
+    global executed
+    if not executed:
+        logger, writer = load_logger(config)    # 重复创建logger会导致递归错误，所以执行过一次后直接跳过
+        executed = True
 
     # Load dataset
     print(f'#IN#Load Dataset {config.dataset.dataset_name}')
