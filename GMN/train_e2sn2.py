@@ -297,7 +297,7 @@ def main():
     print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.5f}')
 
     # ---------- Test ----------
-    test_loss, test_metric = dataset_test_performance(test_loader, model, device)
+    test_loss, test_metric = dataset_test_performance(test_loader, best_model, device)
 
     return best_score, test_metric
 
