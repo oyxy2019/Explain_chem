@@ -433,6 +433,8 @@ class GraphAggregator(nn.Module):
                 layer.append(nn.ReLU())
                 layer.append(nn.Linear(self._graph_transform_sizes[i - 1], self._graph_transform_sizes[i]))
             MLP2 = nn.Sequential(*layer)
+        else:
+            MLP2 = None
 
         return MLP1, MLP2
 

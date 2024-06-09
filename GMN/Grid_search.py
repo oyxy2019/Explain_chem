@@ -39,31 +39,23 @@ from GMN.configure import change_config
 #         [node_state_dim * 2, node_state_dim * 2],
 #         [node_state_dim * 2, node_state_dim * 2, node_state_dim * 2],
 #     ],
-#     'encoder_layers_node': [
+#     'encoder_node_hidden_sizes': [
 #         [node_state_dim],
 #         [node_state_dim*2, node_state_dim],
 #         [node_state_dim*2, node_state_dim*2, node_state_dim],
 #     ],
-#     'encoder_layers_edge': [
+#     'encoder_edge_hidden_sizes': [
 #         [edge_state_dim],
 #         [edge_state_dim * 2, edge_state_dim],
 #         [edge_state_dim * 2, edge_state_dim * 2, edge_state_dim],
 #     ],
-#     'aggregator_layers': [
-#         [graph_rep_dim],
-#         [graph_rep_dim, graph_rep_dim],
-#         [graph_rep_dim, graph_rep_dim, graph_rep_dim],
 #     ]
 # }
 
-edge_state_dim = 32
-node_state_dim = 16
-graph_rep_dim = 128
+
 param_grid = {
-        'encoder_layers_edge': [
-            [edge_state_dim],
-            [edge_state_dim * 2, edge_state_dim],
-        ],
+    'aggregator_gated': [True, False],
+    'aggregator_graph_transform_sizes': [None, [128], [128, 128, 128]]
 }
 
 results = []
