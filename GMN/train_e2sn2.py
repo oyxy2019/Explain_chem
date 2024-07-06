@@ -68,7 +68,8 @@ class Predictor(nn.Module):
         config['encoder']['edge_feature_dim'] = edge_feature_dim
         encoder = GraphEncoder(**config['encoder'])
 
-        from graphmatchingnetwork_4edge_update import GraphMatchingNet, GraphAggregator
+        from graphmatchingnetwork_4edge_update_stochastic_attention4 import GraphMatchingNet, GraphAggregator
+        self.info_loss_coef = 1.0
         aggregator = GraphAggregator(**config['aggregator'])
         self.gmn = GraphMatchingNet(encoder, aggregator, **config['graph_matching_net'])
 
@@ -110,6 +111,7 @@ def get_new_batch(batch_mol, batch_target):
     edge_features = []
     from_idx = []
     to_idx = []
+    node_start_id = 0
     graph_idx = []
     graph_idx_4edge = []
     for i, molgraph in enumerate(molgraph_list):
@@ -117,8 +119,9 @@ def get_new_batch(batch_mol, batch_target):
         edge_features.append(torch.tensor(molgraph.f_bonds))
         atom1_idx = [molgraph.b2a[bond_idx] for bond_idx in range(molgraph.n_bonds)]
         atom2_idx = [molgraph.b2a[molgraph.b2revb[bond_idx]] for bond_idx in range(molgraph.n_bonds)]
-        from_idx.append(torch.tensor(atom1_idx))
-        to_idx.append(torch.tensor(atom2_idx))
+        from_idx.append(torch.tensor(atom1_idx) + node_start_id)
+        to_idx.append(torch.tensor(atom2_idx) + node_start_id)
+        node_start_id += molgraph.n_atoms
         graph_idx.append(torch.zeros(molgraph.n_atoms, dtype=torch.long) + i)
         graph_idx_4edge.append(torch.zeros(molgraph.n_bonds, dtype=torch.long) + i)
         # Debug
@@ -172,7 +175,7 @@ def dataset_test_performance(test_loader, model, device):
     test_loss = sum(test_loss) / len(test_loss)
     test_metric = sum(test_metric) / len(test_metric)
 
-    print(f"\n[ Test | test_loss = {test_loss:.5f}, test_RMSE = {test_metric:.5f}")
+    print(f"\n[ Test | test_loss = {test_loss:.3f}, test_RMSE = {test_metric:.3f}")
 
     return test_loss, test_metric
 
@@ -210,6 +213,7 @@ def main():
     for epoch in range(num_epoch):
         # ---------- Training ----------
         model.train()
+        model.gmn.current_epoch = epoch
 
         train_loss = []
         train_metric = []
@@ -221,13 +225,13 @@ def main():
 
             pred = model(node_features.to(device),
                          edge_features.to(device),
-                         from_idx.to(device),
-                         to_idx.to(device),
-                         graph_idx.to(device),
-                         graph_idx_4edge.to(device),
+                         from_idx.to(device),       # 相当于edge_index
+                         to_idx.to(device),         # 相当于edge_index
+                         graph_idx.to(device),      # node属于哪一张图
+                         graph_idx_4edge.to(device),# edge属于哪一张图
                          training_n_graphs_in_batch)
 
-            loss = nn.functional.l1_loss(pred, labels.to(device))
+            loss = nn.functional.l1_loss(pred, labels.to(device)) + model.info_loss_coef * model.gmn.info_loss
 
             optimizer.zero_grad()
             loss.backward()
@@ -244,7 +248,7 @@ def main():
         train_loss = sum(train_loss) / len(train_loss)
         train_metric = sum(train_metric) / len(train_metric)
 
-        print(f"[ Train | {epoch + 1:03d}/{num_epoch:03d} ] loss = {train_loss:.5f}, RMSE = {train_metric:.5f}", end='')
+        print(f"[ Train | {epoch + 1:03d}/{num_epoch:03d} ] loss = {train_loss:.3f}, RMSE = {train_metric:.3f}", end='')
 
         # ---------- Validation ----------
         model.eval()
@@ -278,7 +282,7 @@ def main():
         valid_loss = sum(valid_loss) / len(valid_loss)
         valid_metric = sum(valid_metric) / len(valid_metric)
 
-        print(f"[ Valid | {epoch + 1:03d}/{num_epoch:03d} ] loss = {valid_loss:.5f}, RMSE = {valid_metric:.5f}")
+        print(f"[ Valid | {epoch + 1:03d}/{num_epoch:03d} ] loss = {valid_loss:.3f}, RMSE = {valid_metric:.3f}")
 
         # save model
         if valid_metric < best_score:
@@ -293,11 +297,13 @@ def main():
                 print(f"No improvment {patience} consecutive epochs, early stopping")
                 break
 
-    torch.save(best_model, f"{model_save_path}/best_model_{current_time}_val_RMSE_{best_score:.5f}.pt")
-    print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.5f}')
+    # torch.save(best_model, f"{model_save_path}/best_model_{current_time}_val_RMSE_{best_score:.3f}.pt")
+    print(f'\nTraining end, Best model found at epoch {best_epoch}, best_val_score={best_score:.3f}')
 
     # ---------- Test ----------
     test_loss, test_metric = dataset_test_performance(test_loader, best_model, device)
+
+    torch.cuda.empty_cache()
 
     return best_score, test_metric
 

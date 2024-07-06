@@ -2,90 +2,30 @@ from graphembeddingnetwork import GraphEmbeddingNet
 from graphembeddingnetwork import GraphPropLayer
 import torch
 import torch.nn as nn
+from torch_geometric.utils import is_undirected
+from torch_sparse import transpose
 
 
-def pairwise_euclidean_similarity(x, y):
-    """Compute the pairwise Euclidean similarity between x and y.
+class CrossAttention(nn.Module):
+    def __init__(self, edge_dim):
+        super(CrossAttention, self).__init__()
+        self.edge_dim = edge_dim
+        self.W_q = nn.Linear(edge_dim, edge_dim)
+        self.W_k = nn.Linear(edge_dim, edge_dim)
 
-    This function computes the following similarity value between each pair of x_i
-    and y_j: s(x_i, y_j) = -|x_i - y_j|^2.
+    def forward(self, x, y):
+        # x.shape = (num_edges_x, edge_dim)
+        # y.shape = (num_edges_y, edge_dim)
 
-    Args:
-      x: NxD float tensor.
-      y: MxD float tensor.
+        Q = self.W_q(x)  # (num_edges_x, edge_dim)
+        K = self.W_k(y)  # (num_edges_y, edge_dim)
 
-    Returns:
-      s: NxM float tensor, the pairwise euclidean similarity.
-    """
-    s = 2 * torch.mm(x, torch.transpose(y, 1, 0))
-    diag_x = torch.sum(x * x, dim=-1)
-    diag_x = torch.unsqueeze(diag_x, 0)
-    diag_y = torch.reshape(torch.sum(y * y, dim=-1), (1, -1))
+        scores = torch.matmul(Q, K.transpose(0, 1))  # (num_edges_x, num_edges_y)
 
-    return s - diag_x - diag_y
+        return scores
 
 
-def pairwise_dot_product_similarity(x, y):
-    """Compute the dot product similarity between x and y.
-
-    This function computes the following similarity value between each pair of x_i
-    and y_j: s(x_i, y_j) = x_i^T y_j.
-
-    Args:
-      x: NxD float tensor.
-      y: MxD float tensor.
-
-    Returns:
-      s: NxM float tensor, the pairwise dot product similarity.
-    """
-    return torch.mm(x, torch.transpose(y, 1, 0))
-
-
-def pairwise_cosine_similarity(x, y):
-    """Compute the cosine similarity between x and y.
-
-    This function computes the following similarity value between each pair of x_i
-    and y_j: s(x_i, y_j) = x_i^T y_j / (|x_i||y_j|).
-
-    Args:
-      x: NxD float tensor.
-      y: MxD float tensor.
-
-    Returns:
-      s: NxM float tensor, the pairwise cosine similarity.
-    """
-    x = torch.div(x, torch.sqrt(torch.max(torch.sum(x ** 2), 1e-12)))
-    y = torch.div(y, torch.sqrt(torch.max(torch.sum(y ** 2), 1e-12)))
-    return torch.mm(x, torch.transpose(y, 1, 0))
-
-
-PAIRWISE_SIMILARITY_FUNCTION = {
-    'euclidean': pairwise_euclidean_similarity,
-    'dotproduct': pairwise_dot_product_similarity,
-    'cosine': pairwise_cosine_similarity,
-}
-
-
-def get_pairwise_similarity(name):
-    """Get pairwise similarity metric by name.
-
-    Args:
-      name: string, name of the similarity metric, one of {dot-product, cosine,
-        euclidean}.
-
-    Returns:
-      similarity: a (x, y) -> sim function.
-
-    Raises:
-      ValueError: if name is not supported.
-    """
-    if name not in PAIRWISE_SIMILARITY_FUNCTION:
-        raise ValueError('Similarity metric name "%s" not supported.' % name)
-    else:
-        return PAIRWISE_SIMILARITY_FUNCTION[name]
-
-
-def compute_cross_attention(x, y, sim):
+def compute_cross_attention(x, y, cross_attention):
     """Compute cross attention.
 
     x_i attend to y_j:
@@ -104,7 +44,7 @@ def compute_cross_attention(x, y, sim):
       attention_x: NxD float tensor.
       attention_y: NxD float tensor.
     """
-    a = sim(x, y)
+    a = cross_attention(x, y)
     a_x = torch.softmax(a, dim=1)  # i->j
     a_y = torch.softmax(a, dim=0)  # j->i
     attention_x = torch.mm(a_x, y)
@@ -115,7 +55,7 @@ def compute_cross_attention(x, y, sim):
 def batch_block_pair_attention(data,
                                block_idx,
                                n_blocks,
-                               similarity='dotproduct'):
+                               cross_attention):
     """Compute batched attention between pairs of blocks.
 
     This function partitions the batch data into blocks according to block_idx.
@@ -150,8 +90,6 @@ def batch_block_pair_attention(data,
     if n_blocks % 2 != 0:
         raise ValueError('n_blocks (%d) must be a multiple of 2.' % n_blocks)
 
-    sim = get_pairwise_similarity(similarity)
-
     results = []
 
     # This is probably better than doing boolean_mask for each i
@@ -162,9 +100,10 @@ def batch_block_pair_attention(data,
     for i in range(0, n_blocks, 2):
         x = partitions[i]
         y = partitions[i + 1]
-        attention_x, attention_y = compute_cross_attention(x, y, sim)
+        attention_x, attention_y = compute_cross_attention(x, y, cross_attention)
         results.append(attention_x)
         results.append(attention_y)
+
     results = torch.cat(results, dim=0)
 
     return results
@@ -226,6 +165,7 @@ class GraphPropMatchingLayer(GraphPropLayer):
             prop_type=prop_type,
             name=name
         )
+        self.cross_attention = CrossAttention(edge_state_dim)
 
     def build_model(self):
         layer = []
@@ -368,9 +308,9 @@ class GraphPropMatchingLayer(GraphPropLayer):
             edge_states, from_idx, to_idx, node_features=node_features)
 
         cross_graph_attention = batch_block_pair_attention(
-            edge_states, self.graph_idx_4edge, n_graphs, similarity=similarity)
+            edge_states, self.graph_idx_4edge, n_graphs, cross_attention=self.cross_attention)
         # attention_input = edge_states - cross_graph_attention
-        attention_input = cross_graph_attention     # 试一下去掉差值对结果的影响
+        attention_input = cross_graph_attention
 
         return self._compute_edge_update(edge_states,
                                          [aggregated_messages, attention_input],
@@ -521,6 +461,9 @@ class GraphMatchingNet(GraphEmbeddingNet):
             prop_type=prop_type,
         )
         self._similarity = similarity
+        from dev import ExtractorMLP
+        self.extractor = ExtractorMLP(hidden_size=edge_state_dim)
+
 
     def _build_layer(self, layer_id):
         """Build one layer in the network."""
@@ -586,6 +529,31 @@ class GraphMatchingNet(GraphEmbeddingNet):
                 n_graphs,
                 node_features)
 
+        # 注入随机注意力机制
+        att_log_logits = self.extractor(edge_states, self.graph_idx_4edge)
+        att = self.concrete_sample(att_log_logits, self.training)
+        edge_index = torch.stack([from_idx, to_idx], dim=0)
+        if is_undirected(edge_index):
+            nodesize = node_features.shape[0]
+            edge_att = (att + transpose(edge_index, att, nodesize, nodesize, coalesced=False)[1]) / 2
+        else:
+            edge_att = att
+        assert edge_states.size(0) == edge_att.size(0)
+        edge_states = edge_states * edge_att.view([-1] + [1] * (edge_states.dim() - 1))
+
+        # 第二次过一遍gmn
+        for layer in self._prop_layers:
+            edge_states = self._apply_layer(
+                layer,
+                edge_states,
+                from_idx,
+                to_idx,
+                graph_idx,
+                n_graphs,
+                node_features)
+
+        self.info_loss = self.compute_info_loss(att)
+
         return self._aggregator(edge_states, self.graph_idx_4edge, n_graphs)
 
     # oyxy加
@@ -593,3 +561,28 @@ class GraphMatchingNet(GraphEmbeddingNet):
         self.graph_idx_4edge = graph_idx_4edge
         for layer in self._prop_layers:
             layer.graph_idx_4edge = graph_idx_4edge
+
+
+    def compute_info_loss(self, att):
+        eps = 1e-6
+        r = self.get_r(decay_interval=20, decay_r=0.1, current_epoch=self.current_epoch, final_r=0.5)
+        info_loss = (att * torch.log(att / r + eps) +
+                     (1 - att) * torch.log((1 - att) / (1 - r + eps) + eps)).mean()
+        return info_loss
+
+
+    def get_r(self, decay_interval, decay_r, current_epoch, init_r=0.9, final_r=0.5):
+        r = init_r - current_epoch // decay_interval * decay_r
+        if r < final_r:
+            r = final_r
+        return r
+
+
+    def concrete_sample(self, att_log_logit, training, temp=1.0):
+        if training:
+            random_noise = torch.empty_like(att_log_logit).uniform_(1e-10, 1 - 1e-10)
+            random_noise = torch.log(random_noise) - torch.log(1.0 - random_noise)
+            att_bern = ((att_log_logit + random_noise) / temp).sigmoid()
+        else:
+            att_bern = (att_log_logit).sigmoid()
+        return att_bern
