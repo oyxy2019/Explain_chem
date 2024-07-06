@@ -43,9 +43,9 @@ class GSATGIN(GNNBasic):
 
         """
         data = kwargs.get('data')
-        emb = self.gnn(*args, without_readout=True, **kwargs)
-        att_log_logits = self.extractor(emb, data.edge_index, data.batch)
-        att = self.sampling(att_log_logits, self.training)
+        emb = self.gnn(*args, without_readout=True, **kwargs)   # (num_nodes, hidden_dim)
+        att_log_logits = self.extractor(emb, data.edge_index, data.batch)   # (num_edges, 1)
+        att = self.sampling(att_log_logits, self.training)      # (num_edges, 1)
 
         if self.learn_edge_att:
             if is_undirected(data.edge_index):
