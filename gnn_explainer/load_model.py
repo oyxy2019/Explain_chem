@@ -91,7 +91,6 @@ def load_good_dataset_dataloader(config_path, device=torch.device("cpu")):
 
 if __name__ == '__main__':
     model, dataset = load_good_model_dataset('final_configs/GOODE2SN2/size/covariate/GSAT.yaml')
-    print(model)
     train_dataset = dataset['train']
     print(dataset['train'][0].mol)
     print(dataset['train'][1].mol)

@@ -31,7 +31,7 @@ def plot_reaction_with_smiles(reaction_smiles):
     plt.show()
 
 
-def get_id_map_to_label(mol_graph):
+def get_id_map_to_label_4_reaction(mol_graph):
     '''
     根据反应式SMILE字符串，得到可视化图节点中的标签
     '''
@@ -68,6 +68,18 @@ def get_id_map_to_label(mol_graph):
     return id_map_to_label
 
 
+def get_id_map_to_label_4_mol(mol_graph):
+    '''
+    根据反应物或者生成物的SMILE字符串，得到可视化图节点中的标签
+    '''
+    mol = make_mol(mol_graph.mol, mol_graph.is_explicit_h, mol_graph.is_adding_hs,
+                        mol_graph.is_keeping_atom_map)
+
+    # id_map_to_label = {atom.GetIdx(): atom.GetSymbol() for atom in mol.GetAtoms()}
+    id_map_to_label = {atom.GetIdx(): f'{atom.GetSymbol()} idx:{atom.GetIdx()}' for atom in mol.GetAtoms()}  # show idx
+    return id_map_to_label
+
+
 def visualize_chemprop_molgraph(mol_graph, is_reaction=True):
     # Create an empty NetworkX graph
     G = nx.Graph()
@@ -86,10 +98,11 @@ def visualize_chemprop_molgraph(mol_graph, is_reaction=True):
     pos = nx.kamada_kawai_layout(G)
     if is_reaction:
         # 获取节点可视化标签
-        id_map_to_label = get_id_map_to_label(mol_graph)
+        id_map_to_label = get_id_map_to_label_4_reaction(mol_graph)
         nx.draw(G, pos, with_labels=True, labels={idx: id_map_to_label[idx] for idx in G.nodes()}, node_size=500, node_color='skyblue', font_size=10, font_color='black')
     else:
-        nx.draw(G, pos, with_labels=True, node_size=500, node_color='skyblue', font_size=10, font_color='black')
+        id_map_to_label = get_id_map_to_label_4_mol(mol_graph)
+        nx.draw(G, pos, with_labels=True, labels={idx: id_map_to_label[idx] for idx in G.nodes()}, node_size=500, node_color='skyblue', font_size=10, font_color='black')
 
     # Show the graph
     plt.title('Molecular Graph Visualization')

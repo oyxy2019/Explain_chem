@@ -134,8 +134,8 @@ def change_config(**params):
     graph_embedding_net_config = dict(
         node_state_dim=node_state_dim,
         edge_state_dim=edge_state_dim,
-        edge_hidden_sizes=params.get('edge_hidden_sizes', [64]),
-        node_hidden_sizes=params.get('node_hidden_sizes', [32]),
+        edge_hidden_sizes=params.get('edge_hidden_sizes', [edge_state_dim * 2]),
+        node_hidden_sizes=params.get('node_hidden_sizes', [node_state_dim * 2]),
         n_prop_layers=params.get('n_prop_layers', 6),
         # set to False to not share parameters across message passing layers
         share_prop_params=params.get('share_prop_params', False),
@@ -160,11 +160,11 @@ def change_config(**params):
         edge_state_dim=edge_state_dim,
         graph_rep_dim=graph_rep_dim,
         encoder=dict(
-            node_hidden_sizes=params.get('encoder_node_hidden_sizes', [32, 32, 16]),
-            edge_hidden_sizes=params.get('encoder_edge_hidden_sizes', [64, 64, 32])),
+            node_hidden_sizes=params.get('encoder_node_hidden_sizes', [node_state_dim*2, node_state_dim*2, node_state_dim]),
+            edge_hidden_sizes=params.get('encoder_edge_hidden_sizes', [edge_state_dim * 2, edge_state_dim * 2, edge_state_dim])),
         aggregator=dict(
-            edge_hidden_sizes=params.get('aggregator_edge_hidden_sizes', [128]),
-            graph_transform_sizes=params.get('aggregator_graph_transform_sizes', [128]),
+            edge_hidden_sizes=params.get('aggregator_edge_hidden_sizes', [graph_rep_dim]),
+            graph_transform_sizes=params.get('aggregator_graph_transform_sizes', [graph_rep_dim]),
             input_size=[edge_state_dim],
             gated=params.get('aggregator_gated', True),
             aggregation_type=params.get('aggregator_aggregation_type', 'sum')),    # {sum, max, mean, sqrt_n}
