@@ -27,26 +27,34 @@ from GMN.configure import change_config
 # }
 
 edge_state_dim = 32
-node_state_dim = 16
-graph_rep_dim = 128
+node_state_dim = 64
+graph_rep_dim = 256
 param_grid = [
+    # {
+    #     'edge_hidden_sizes': [[edge_state_dim * 2]],
+    #     'node_hidden_sizes': [[node_state_dim * 2]],
+    #     'encoder_node_hidden_sizes': [[node_state_dim]],
+    #     'encoder_edge_hidden_sizes': [[edge_state_dim]],
+    # },
     {
-        'edge_hidden_sizes': [[edge_state_dim * 2]],
-        'node_hidden_sizes': [[node_state_dim * 2]],
-        'encoder_node_hidden_sizes': [[node_state_dim]],
-        'encoder_edge_hidden_sizes': [[edge_state_dim]],
-    },
-    {
+        'node_state_dim': [node_state_dim],
+        'edge_state_dim': [edge_state_dim],
+        'graph_rep_dim': [graph_rep_dim],
         'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2]],
         'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2]],
         'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim]],
         'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim]],
+        'learning_rate':[1e-2, 1e-4]
     },
     {
-        'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2]],
-        'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2, node_state_dim * 2]],
-        'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2, node_state_dim]],
-        'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2, edge_state_dim]],
+        'node_state_dim': [node_state_dim],
+        'edge_state_dim': [edge_state_dim],
+        'graph_rep_dim': [graph_rep_dim],
+        'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2]],
+        'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2, node_state_dim * 2, node_state_dim * 2, node_state_dim * 2]],
+        'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim]],
+        'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim]],
+        'learning_rate':[1e-2, 1e-4]
     },
 ]
 

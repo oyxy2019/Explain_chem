@@ -71,8 +71,8 @@ def get_default_config():
     graph_embedding_net_config = dict(
         node_state_dim=node_state_dim,
         edge_state_dim=edge_state_dim,
-        edge_hidden_sizes=[edge_state_dim * 2],
-        node_hidden_sizes=[node_state_dim * 2],
+        edge_hidden_sizes=[edge_state_dim * 2, edge_state_dim * 2],
+        node_hidden_sizes=[node_state_dim * 2, node_state_dim * 2],
         n_prop_layers=1,
         # set to False to not share parameters across message passing layers
         share_prop_params=False,
@@ -174,7 +174,7 @@ def change_config(**params):
         training=dict(
             num_epoch=200,
             patience=50,
-            learning_rate=1e-3,
+            learning_rate=params.get('learning_rate', 1e-3),
             # A small regularizer on the graph vector scales to avoid the graph
             # vectors blowing up.  If numerical issues is particularly bad in the
             # model we can add `snt.LayerNorm` to the outputs of each layer, the

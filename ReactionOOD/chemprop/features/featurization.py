@@ -15,7 +15,7 @@ class Featurization_parameters:
     def __init__(self) -> None:
 
         # Atom feature sizes
-        self.MAX_ATOMIC_NUM = 100
+        self.MAX_ATOMIC_NUM = 50
         self.ATOM_FEATURES = {
             'atomic_num': list(range(self.MAX_ATOMIC_NUM)),
             'degree': [0, 1, 2, 3, 4, 5],
@@ -399,8 +399,10 @@ class MolGraph:
                         else:
                             f_bond += descr
 
-                    self.f_bonds.append(self.f_atoms[a1] + f_bond)
-                    self.f_bonds.append(self.f_atoms[a2] + f_bond)
+                    # self.f_bonds.append(self.f_atoms[a1] + f_bond)
+                    # self.f_bonds.append(self.f_atoms[a2] + f_bond)
+                    self.f_bonds.append(self.f_atoms[a1] + self.f_atoms[a2] + f_bond)
+                    self.f_bonds.append(self.f_atoms[a2] + self.f_atoms[a1] + f_bond)
 
                     # Update index mappings
                     b1 = self.n_bonds
