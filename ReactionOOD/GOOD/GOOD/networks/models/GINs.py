@@ -66,6 +66,7 @@ class GINFeatExtractor(GNNBasic):
     def __init__(self, config: Union[CommonArgs, Munch], **kwargs):
         super(GINFeatExtractor, self).__init__(config)
         num_layer = config.model.model_layer
+        config.dataset.dataset_type = 'mol'
         if config.dataset.dataset_type == 'mol':
             self.encoder = GINMolEncoder(config, **kwargs)
             self.edge_feat = True

@@ -50,7 +50,7 @@ def initialize_model_dataset(config: Union[CommonArgs, Munch]) -> Tuple[torch.nn
 
 def main():
     # args = args_parser()
-    args = args_parser(['--config_path', 'final_configs/GOODE2SN2/size/concept/GSAT.yaml'])
+    args = args_parser(['--config_path', 'final_configs/GOODE2SN2/size/no_shift/GSAT.yaml'])
     config = config_summoner(args)
     print(config)
     logger, writer = load_logger(config)
