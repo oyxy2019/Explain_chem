@@ -20,6 +20,8 @@ import torch.nn as nn
 import collections
 import time
 import os
+import global_setting
+
 
 # dataset config
 config_path = 'final_configs/GOODE2SN2/size/no_shift/base_data.yaml'
@@ -194,10 +196,8 @@ def main():
     test_loader = dataloader['test']
 
     # model and optimizer
-    # node_feature_dim = 133
-    # edge_feature_dim = 147
-    node_feature_dim = 83
-    edge_feature_dim = 180
+    node_feature_dim = global_setting.node_feature_dim
+    edge_feature_dim = global_setting.edge_feature_dim
     head_hidden_dim = 64
     model = Predictor(node_feature_dim, edge_feature_dim, head_hidden_dim).to(device)
     print(model)
