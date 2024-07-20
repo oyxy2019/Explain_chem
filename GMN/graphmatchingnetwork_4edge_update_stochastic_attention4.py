@@ -1,5 +1,7 @@
 from graphembeddingnetwork import GraphEmbeddingNet
 from graphembeddingnetwork import GraphPropLayer
+
+import os
 import torch
 import torch.nn as nn
 from torch_geometric.utils import is_undirected
@@ -442,7 +444,7 @@ class GraphMatchingNet(GraphEmbeddingNet):
                  layer_class=GraphPropLayer,
                  similarity='dotproduct',
                  prop_type='embedding'):
-        print("init graph_matching_network_4edge_update")
+        print(f"init {os.path.basename(__file__).split('.')[0]}")
         self._edge_update_type = edge_update_type
         super(GraphMatchingNet, self).__init__(
             encoder,

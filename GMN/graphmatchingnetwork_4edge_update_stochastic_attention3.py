@@ -1,5 +1,7 @@
 from graphembeddingnetwork import GraphEmbeddingNet
 from graphembeddingnetwork import GraphPropLayer
+
+import os
 import torch
 import torch.nn as nn
 
@@ -451,7 +453,7 @@ class GraphMatchingNet(GraphEmbeddingNet):
                  layer_class=GraphPropLayer,
                  similarity='dotproduct',
                  prop_type='embedding'):
-        print("init graph_matching_network_4edge_update")
+        print(f"init {os.path.basename(__file__).split('.')[0]}")
         self._edge_update_type = edge_update_type
         super(GraphMatchingNet, self).__init__(
             encoder,
@@ -550,7 +552,7 @@ class GraphMatchingNet(GraphEmbeddingNet):
         info_loss = 0
         for att in att_list:
             eps = 1e-6
-            r = self.get_r(decay_interval=20, decay_r=0.1, current_epoch=self.current_epoch, final_r=0.5)
+            r = self.get_r(decay_interval=20, decay_r=0.1, current_epoch=self.current_epoch, init_r=0.9, final_r=0.5)
             info_loss += (att * torch.log(att / r + eps) +
                          (1 - att) * torch.log((1 - att) / (1 - r + eps) + eps)).mean()
         info_loss = info_loss / len(att_list)
