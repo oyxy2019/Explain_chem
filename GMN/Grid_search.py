@@ -26,42 +26,48 @@ from GMN.configure import change_config
 #     'share_prop_params': [True, False],
 # }
 
-edge_state_dim = 32
-node_state_dim = 64
-graph_rep_dim = 256
-param_grid = [
-    # {
-    #     'edge_hidden_sizes': [[edge_state_dim * 2]],
-    #     'node_hidden_sizes': [[node_state_dim * 2]],
-    #     'encoder_node_hidden_sizes': [[node_state_dim]],
-    #     'encoder_edge_hidden_sizes': [[edge_state_dim]],
-    # },
-    {
-        'node_state_dim': [node_state_dim],
-        'edge_state_dim': [edge_state_dim],
-        'graph_rep_dim': [graph_rep_dim],
-        'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2]],
-        'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2]],
-        'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim]],
-        'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim]],
-        'learning_rate':[1e-2, 1e-4]
-    },
-    {
-        'node_state_dim': [node_state_dim],
-        'edge_state_dim': [edge_state_dim],
-        'graph_rep_dim': [graph_rep_dim],
-        'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2]],
-        'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2, node_state_dim * 2, node_state_dim * 2, node_state_dim * 2]],
-        'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim]],
-        'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim]],
-        'learning_rate':[1e-2, 1e-4]
-    },
-]
+# edge_state_dim = 32
+# node_state_dim = 64
+# graph_rep_dim = 256
+# param_grid = [
+#     # {
+#     #     'edge_hidden_sizes': [[edge_state_dim * 2]],
+#     #     'node_hidden_sizes': [[node_state_dim * 2]],
+#     #     'encoder_node_hidden_sizes': [[node_state_dim]],
+#     #     'encoder_edge_hidden_sizes': [[edge_state_dim]],
+#     # },
+#     {
+#         'node_state_dim': [node_state_dim],
+#         'edge_state_dim': [edge_state_dim],
+#         'graph_rep_dim': [graph_rep_dim],
+#         'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2]],
+#         'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2]],
+#         'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim]],
+#         'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim]],
+#         'learning_rate':[1e-2, 1e-4]
+#     },
+#     {
+#         'node_state_dim': [node_state_dim],
+#         'edge_state_dim': [edge_state_dim],
+#         'graph_rep_dim': [graph_rep_dim],
+#         'edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2, edge_state_dim * 2]],
+#         'node_hidden_sizes': [[node_state_dim * 2, node_state_dim * 2, node_state_dim * 2, node_state_dim * 2, node_state_dim * 2]],
+#         'encoder_node_hidden_sizes': [[node_state_dim * 2, node_state_dim]],
+#         'encoder_edge_hidden_sizes': [[edge_state_dim * 2, edge_state_dim]],
+#         'learning_rate':[1e-2, 1e-4]
+#     },
+# ]
 
 # param_grid = {
 #     'aggregator_gated': [True, False],
 #     'aggregator_graph_transform_sizes': [None, [128], [128, 128, 128]]
 # }
+
+param_grid = [
+    {
+        'info_loss_coef': [0, 0.5, 0.7, 1.0],
+    },
+]
 
 results = []
 for params in ParameterGrid(param_grid):
@@ -69,11 +75,12 @@ for params in ParameterGrid(param_grid):
     print("### params changed:", params)
 
     try:
-        val_metric, test_metric = train_e2sn2.main()
+        # continue
+        train_metric, val_metric, test_metric = train_e2sn2.main()
     except Exception as e:
         print(f"An error occurred: {e}")
         traceback.print_exc()
-        val_metric, test_metric = 0, 0
+        train_metric, val_metric, test_metric = 0, 0, 0
 
     result = {'params': params, 'val_score': val_metric, 'test_score': test_metric}
     results.append(result)

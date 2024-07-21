@@ -87,7 +87,7 @@ def get_pairwise_similarity(name):
         return PAIRWISE_SIMILARITY_FUNCTION[name]
 
 
-def compute_cross_attention(x, y, sim, training, temp=1.0):
+def compute_cross_attention(x, y, sim):
     """Compute cross attention.
 
     x_i attend to y_j:
@@ -107,26 +107,17 @@ def compute_cross_attention(x, y, sim, training, temp=1.0):
       attention_y: NxD float tensor.
     """
     a = sim(x, y)
-
-    if training:
-        random_noise = torch.empty_like(a).uniform_(1e-10, 1 - 1e-10)
-        random_noise = torch.log(random_noise) - torch.log(1.0 - random_noise)
-        a_x = torch.softmax((a + random_noise) / temp, dim=1)  # i->j
-        a_y = torch.softmax((a + random_noise) / temp, dim=0)  # j->i
-    else:
-        a_x = torch.softmax(a, dim=1)  # i->j
-        a_y = torch.softmax(a, dim=0)  # j->i
-
+    a_x = torch.softmax(a, dim=1)  # i->j
+    a_y = torch.softmax(a, dim=0)  # j->i
     attention_x = torch.mm(a_x, y)
     attention_y = torch.mm(torch.transpose(a_y, 1, 0), x)
-    return attention_x, attention_y, a_x, a_y
+    return attention_x, attention_y
 
 
 def batch_block_pair_attention(data,
                                block_idx,
                                n_blocks,
-                               similarity='dotproduct',
-                               training=True):
+                               similarity='dotproduct'):
     """Compute batched attention between pairs of blocks.
 
     This function partitions the batch data into blocks according to block_idx.
@@ -164,7 +155,6 @@ def batch_block_pair_attention(data,
     sim = get_pairwise_similarity(similarity)
 
     results = []
-    att_list = []
 
     # This is probably better than doing boolean_mask for each i
     partitions = []
@@ -174,14 +164,12 @@ def batch_block_pair_attention(data,
     for i in range(0, n_blocks, 2):
         x = partitions[i]
         y = partitions[i + 1]
-        attention_x, attention_y, a_x, a_y = compute_cross_attention(x, y, sim, training)
+        attention_x, attention_y = compute_cross_attention(x, y, sim)
         results.append(attention_x)
         results.append(attention_y)
-        att_list.append(a_x)
-        att_list.append(a_y)
     results = torch.cat(results, dim=0)
 
-    return results, att_list
+    return results
 
 
 def graph_prop_once_4edge(edge_states,
@@ -381,14 +369,14 @@ class GraphPropMatchingLayer(GraphPropLayer):
         aggregated_messages = self._compute_aggregated_messages_4edge(
             edge_states, from_idx, to_idx, node_features=node_features)
 
-        cross_graph_attention, att_list = batch_block_pair_attention(
-            edge_states, self.graph_idx_4edge, n_graphs, similarity=similarity, training=self.training)
+        cross_graph_attention = batch_block_pair_attention(
+            edge_states, self.graph_idx_4edge, n_graphs, similarity=similarity)
         # attention_input = edge_states - cross_graph_attention
-        attention_input = cross_graph_attention
+        attention_input = cross_graph_attention     # 试一下去掉差值对结果的影响
 
         return self._compute_edge_update(edge_states,
                                          [aggregated_messages, attention_input],
-                                         edge_features=edge_features), att_list
+                                         edge_features=edge_features)
 
 
 class GraphAggregator(nn.Module):
@@ -536,6 +524,9 @@ class GraphMatchingNet(GraphEmbeddingNet):
             prop_type=prop_type,
         )
         self._similarity = similarity
+        # use gnn encoder
+        from GNNEncoder import GINEncoder, GINMolEncoder
+        self._encoder = GINMolEncoder()
 
     def _build_layer(self, layer_id):
         """Build one layer in the network."""
@@ -584,15 +575,16 @@ class GraphMatchingNet(GraphEmbeddingNet):
           graph_representations: [n_graphs, graph_representation_dim] float tensor,
             graph representations.
         """
+        edge_index = torch.stack([from_idx, to_idx], dim=0)
 
-        node_features, edge_features = self._encoder(node_features, edge_features)
-        node_states = node_features
-        edge_states = edge_features
+        node_states = self._encoder(node_features, edge_index, edge_features, graph_idx, n_graphs, without_readout=True)
+        # node_states = node_features
+        # edge_states = edge_features
 
         for layer in self._prop_layers:
             # node_features could be wired in here as well, leaving it out for now as
             # it is already in the inputs
-            edge_states, att_list = self._apply_layer(
+            edge_states = self._apply_layer(
                 layer,
                 edge_states,
                 from_idx,
@@ -601,8 +593,6 @@ class GraphMatchingNet(GraphEmbeddingNet):
                 n_graphs,
                 node_features)
 
-        self.info_loss = self.compute_info_loss(att_list)
-
         return self._aggregator(edge_states, self.graph_idx_4edge, n_graphs)
 
     # oyxy加
@@ -610,21 +600,3 @@ class GraphMatchingNet(GraphEmbeddingNet):
         self.graph_idx_4edge = graph_idx_4edge
         for layer in self._prop_layers:
             layer.graph_idx_4edge = graph_idx_4edge
-
-
-    def compute_info_loss(self, att_list):
-        info_loss = 0
-        for att in att_list:
-            eps = 1e-6
-            r = self.get_r(decay_interval=20, decay_r=0.1, current_epoch=self.current_epoch, final_r=0.5)
-            info_loss += (att * torch.log(att / r + eps) +
-                         (1 - att) * torch.log((1 - att) / (1 - r + eps) + eps)).mean()
-        info_loss = info_loss / len(att_list)
-        return info_loss
-
-
-    def get_r(self, decay_interval, decay_r, current_epoch, init_r=0.9, final_r=0.5):
-        r = init_r - current_epoch // decay_interval * decay_r
-        if r < final_r:
-            r = final_r
-        return r

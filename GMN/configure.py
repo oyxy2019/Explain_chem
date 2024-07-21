@@ -110,7 +110,7 @@ def get_default_config():
         model_type=model_type,
         training=dict(
             num_epoch=200,
-            patience=50,
+            patience=200,
             learning_rate=1e-3,
             # A small regularizer on the graph vector scales to avoid the graph
             # vectors blowing up.  If numerical issues is particularly bad in the
@@ -121,6 +121,10 @@ def get_default_config():
             # Add gradient clipping to avoid large gradients.
             clip_value=1.0,),
         seed=8,
+        # new add
+        hyperparams=dict(
+            info_loss_coef=1.0,
+        )
     )
 
 
@@ -134,9 +138,9 @@ def change_config(**params):
     graph_embedding_net_config = dict(
         node_state_dim=node_state_dim,
         edge_state_dim=edge_state_dim,
-        edge_hidden_sizes=params.get('edge_hidden_sizes', [edge_state_dim * 2]),
-        node_hidden_sizes=params.get('node_hidden_sizes', [node_state_dim * 2]),
-        n_prop_layers=params.get('n_prop_layers', 6),
+        edge_hidden_sizes=params.get('edge_hidden_sizes', [edge_state_dim * 2, edge_state_dim * 2]),
+        node_hidden_sizes=params.get('node_hidden_sizes', [node_state_dim * 2, node_state_dim * 2]),
+        n_prop_layers=params.get('n_prop_layers', 1),
         # set to False to not share parameters across message passing layers
         share_prop_params=params.get('share_prop_params', False),
         # initialize message MLP with small parameter weights to prevent
@@ -173,7 +177,7 @@ def change_config(**params):
         model_type=model_type,
         training=dict(
             num_epoch=200,
-            patience=50,
+            patience=200,
             learning_rate=params.get('learning_rate', 1e-3),
             # A small regularizer on the graph vector scales to avoid the graph
             # vectors blowing up.  If numerical issues is particularly bad in the
@@ -184,4 +188,8 @@ def change_config(**params):
             # Add gradient clipping to avoid large gradients.
             clip_value=1.0,),
         seed=8,
+        # new add
+        hyperparams=dict(
+            info_loss_coef=params.get('info_loss_coef', 1.0),
+        )
     )

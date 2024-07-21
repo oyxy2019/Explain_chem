@@ -33,7 +33,7 @@ print('#D#', dataset['train'][0] if type(dataset) is dict else dataset[0])
 
 # Set GPU
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-use_cuda = torch.cuda.is_available()
+use_cuda = torch.cuda.is_available() and False
 device = torch.device('cuda:0' if use_cuda else 'cpu')
 print(torch.cuda.get_device_name(device) if device.type == 'cuda' else "CPU")
 
@@ -70,10 +70,10 @@ class Predictor(nn.Module):
         config['encoder']['edge_feature_dim'] = edge_feature_dim
         encoder = GraphEncoder(**config['encoder'])
 
-        from graphmatchingnetwork_4edge_update import GraphMatchingNet, GraphAggregator
-        self.info_loss_coef = 1.0
+        from graphmatchingnetwork_4edge_update_stochastic_attention3 import GraphMatchingNet, GraphAggregator
+        self.info_loss_coef = config['hyperparams']['info_loss_coef']
         aggregator = GraphAggregator(**config['aggregator'])
-        self.gmn = GraphMatchingNet(encoder, aggregator, **config['graph_matching_net'])
+        self.gmn = GraphMatchingNet(encoder, aggregator, **config['graph_matching_net'], **config['hyperparams'])
 
         # predictor
         self.fc1 = nn.Linear(config['graph_rep_dim'] * 2, head_hidden_dim)  # we concatenate x and y

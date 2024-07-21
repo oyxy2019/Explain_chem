@@ -443,7 +443,8 @@ class GraphMatchingNet(GraphEmbeddingNet):
                  layer_norm=False,
                  layer_class=GraphPropLayer,
                  similarity='dotproduct',
-                 prop_type='embedding'):
+                 prop_type='embedding',
+                 **kwargs):
         print(f"init {os.path.basename(__file__).split('.')[0]}")
         self._edge_update_type = edge_update_type
         super(GraphMatchingNet, self).__init__(
