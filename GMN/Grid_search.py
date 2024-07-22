@@ -63,9 +63,16 @@ from GMN.configure import change_config
 #     'aggregator_graph_transform_sizes': [None, [128], [128, 128, 128]]
 # }
 
+# param_grid = [
+#     {
+#         'info_loss_coef': [0, 0.5, 0.7, 1.0],
+#     },
+# ]
+
 param_grid = [
     {
-        'info_loss_coef': [0, 0.5, 0.7, 1.0],
+        'decay_interval': [10, 20],
+        'final_r': [0, 0.5, 0.7, 1.0],
     },
 ]
 

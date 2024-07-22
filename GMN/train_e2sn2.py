@@ -234,7 +234,7 @@ def main():
                          graph_idx_4edge.to(device),# edge属于哪一张图
                          training_n_graphs_in_batch)
 
-            loss = nn.functional.l1_loss(pred, labels.to(device))# + model.info_loss_coef * model.gmn.info_loss
+            loss = nn.functional.l1_loss(pred, labels.to(device)) + model.info_loss_coef * model.gmn.info_loss
 
             optimizer.zero_grad()
             loss.backward()

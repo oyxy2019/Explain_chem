@@ -124,6 +124,8 @@ def get_default_config():
         # new add
         hyperparams=dict(
             info_loss_coef=1.0,
+            decay_interval=20,
+            final_r=0.5,
         )
     )
 
@@ -191,5 +193,7 @@ def change_config(**params):
         # new add
         hyperparams=dict(
             info_loss_coef=params.get('info_loss_coef', 1.0),
+            decay_interval=params.get('decay_interval', 20),
+            final_r=params.get('final_r', 0.5),
         )
     )

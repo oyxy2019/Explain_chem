@@ -473,6 +473,8 @@ class GraphMatchingNet(GraphEmbeddingNet):
             prop_type=prop_type,
         )
         self._similarity = similarity
+        self.hparam_decay_interval = kwargs.get('decay_interval')
+        self.hparam_final_r = kwargs.get('final_r')
 
     def _build_layer(self, layer_id):
         """Build one layer in the network."""
@@ -553,7 +555,11 @@ class GraphMatchingNet(GraphEmbeddingNet):
         info_loss = 0
         for att in att_list:
             eps = 1e-6
-            r = self.get_r(decay_interval=20, decay_r=0.1, current_epoch=self.current_epoch, init_r=0.9, final_r=0.5)
+            r = self.get_r(decay_interval=self.hparam_decay_interval,
+                           decay_r=0.1,
+                           current_epoch=self.current_epoch,
+                           init_r=0.9, 
+                           final_r=self.hparam_final_r)
             info_loss += (att * torch.log(att / r + eps) +
                          (1 - att) * torch.log((1 - att) / (1 - r + eps) + eps)).mean()
         info_loss = info_loss / len(att_list)
