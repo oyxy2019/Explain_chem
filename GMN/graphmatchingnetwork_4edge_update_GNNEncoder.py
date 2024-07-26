@@ -578,8 +578,9 @@ class GraphMatchingNet(GraphEmbeddingNet):
         edge_index = torch.stack([from_idx, to_idx], dim=0)
 
         node_states = self._encoder(node_features, edge_index, edge_features, graph_idx, n_graphs, without_readout=True)
-        # node_states = node_features
-        # edge_states = edge_features
+        col, row = edge_index
+        f1, f2 = node_states[col], node_states[row]
+        edge_states = torch.cat([f1, f2], dim=-1)       # edge is two node concat
 
         for layer in self._prop_layers:
             # node_features could be wired in here as well, leaving it out for now as
@@ -591,7 +592,7 @@ class GraphMatchingNet(GraphEmbeddingNet):
                 to_idx,
                 graph_idx,
                 n_graphs,
-                node_features)
+                node_states)
 
         return self._aggregator(edge_states, self.graph_idx_4edge, n_graphs)
 

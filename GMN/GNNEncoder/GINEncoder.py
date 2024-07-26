@@ -17,7 +17,7 @@ from GMN import global_setting
 default_config = {
     'model': {
         'model_layer': int(3),
-        'dim_hidden': int(300),
+        'dim_hidden': int(16),
         'model_level': str('graph'),
         'global_pool': str('mean'),
         'dropout_rate': float(0.5),
