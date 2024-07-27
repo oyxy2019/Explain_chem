@@ -70,7 +70,7 @@ class Predictor(nn.Module):
         config['encoder']['edge_feature_dim'] = edge_feature_dim
         encoder = GraphEncoder(**config['encoder'])
 
-        from graphmatchingnetwork_4edge_update_GNNEncoder import GraphMatchingNet, GraphAggregator
+        from graphmatchingnetwork_4edge_update_stochastic_attention3_GNNEncoder import GraphMatchingNet, GraphAggregator
         self.info_loss_coef = config['hyperparams']['info_loss_coef']
         aggregator = GraphAggregator(**config['aggregator'])
         self.gmn = GraphMatchingNet(encoder, aggregator, **config['graph_matching_net'], **config['hyperparams'])
